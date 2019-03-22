@@ -17,11 +17,13 @@ namespace go
         public int ParentIndex { get; set; }
     }
 
-    internal class DirectoryIndex
+    internal class DirectoryIndex : IBinarySerializable
     {
         private List<Directory> Directories { get; set; }
         private PrefixIndex NameIndex { get; set; }
         private PrefixIndex ReversedAcronymIndex { get; set; }
+
+        public int Count => Directories.Count;
 
         public DirectoryIndex()
         {
@@ -35,19 +37,15 @@ namespace go
             DirectoryInfo root = new DirectoryInfo(rootPath);
 
             DirectoryIndex result = new DirectoryIndex();
-            result.BuildUp(root);
+            result.BuildUp(root.Parent);
             result.BuildDown(root, result.Directories.Count - 1);
             return result;
         }
 
         private void BuildUp(DirectoryInfo current)
         {
-            DirectoryInfo parent = current.Parent;
-
-            if (parent != null)
-            {
-                BuildUp(parent);
-            }
+            if(current == null) { return; }
+            BuildUp(current.Parent);
 
             Directory here = new Directory()
             {
@@ -80,6 +78,10 @@ namespace go
             catch (UnauthorizedAccessException)
             {
                 // ... Directory we didn't have access to - skip
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // ... Redirect - skip
             }
 
             NameIndex.Add(here.Name, newIndex);
@@ -195,7 +197,7 @@ namespace go
             return result.ToString();
         }
 
-        private string ReversedAcronym(string fullPath)
+        public static string ReversedAcronym(string fullPath)
         {
             string[] parts = fullPath.Split('\\');
 
@@ -206,6 +208,11 @@ namespace go
             }
 
             return result.ToString();
+        }
+
+        public static string Acronym(string path)
+        {
+            return ReversedAcronym(Path.GetFullPath(path)).Reverse();
         }
 
         private int Depth(int index)
@@ -240,6 +247,33 @@ namespace go
             }
 
             builder.Append(here.Name);
+        }
+
+        public void Read(BinaryReader r)
+        {
+            Directories.Clear();
+
+            int directoryCount = r.ReadInt32();
+            for (int i = 0; i < directoryCount; ++i)
+            {
+                Directories.Add(new Directory() { Name = r.ReadString(), ParentIndex = r.ReadInt32() });
+            }
+
+            NameIndex.Read(r);
+            ReversedAcronymIndex.Read(r);
+        }
+
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Directories.Count);
+            for(int i = 0; i < Directories.Count; ++i)
+            {
+                w.Write(Directories[i].Name);
+                w.Write(Directories[i].ParentIndex);
+            }
+
+            NameIndex.Write(w);
+            ReversedAcronymIndex.Write(w);
         }
     }
 }

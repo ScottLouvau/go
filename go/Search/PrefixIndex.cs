@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using go.Extensions;
 using System;
 using System.Collections.Generic;
-
-using go.Extensions;
+using System.IO;
 
 namespace go.Search
 {
@@ -12,14 +12,14 @@ namespace go.Search
     ///  PrefixIndex maps string keys to integer values, and allows
     ///  looking up the full set of values which start with a prefix.
     /// </summary>
-    public class PrefixIndex
+    public class PrefixIndex : IBinarySerializable
     {
         private List<string> SortedKeys { get; set; }
-        private Dictionary<string, List<int>> Index { get; set; }
+        private Dictionary<string, IList<int>> Index { get; set; }
 
         public PrefixIndex()
         {
-            Index = new Dictionary<string, List<int>>();
+            Index = new Dictionary<string, IList<int>>();
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace go.Search
         /// <param name="value">Integer value</param>
         public void Add(string key, int value)
         {
-            List<int> page;
+            IList<int> page;
             if (!Index.TryGetValue(key, out page))
             {
                 SortedKeys = null;
@@ -48,16 +48,70 @@ namespace go.Search
         /// <param name="set">HashSet to add all values for keys starting with prefix to</param>
         public void AddMatchesStartingWith(string prefix, HashSet<int> set)
         {
-            if (SortedKeys == null)
-            {
-                SortedKeys = new List<string>(Index.Keys);
-                SortedKeys.Sort(StringComparer.Ordinal);
-            }
+            ConvertForSearch();
 
             Range matches = SortedKeys.RangeStartingWith(prefix);
             for (int i = matches.Start; i < matches.End; ++i)
             {
                 set.UnionWith(Index[SortedKeys[i]]);
+            }
+        }
+
+        private void ConvertForSearch()
+        {
+            if (SortedKeys == null)
+            {
+                SortedKeys = new List<string>(Index.Keys);
+                SortedKeys.Sort(StringComparer.Ordinal);
+            }
+        }
+
+        public void Read(BinaryReader r)
+        {
+            SortedKeys?.Clear();
+            Index.Clear();
+
+            int keyCount = r.ReadInt32();
+
+            SortedKeys = new List<string>(keyCount);
+            for (int i = 0; i < keyCount; ++i)
+            {
+                SortedKeys.Add(r.ReadString());
+            }
+
+            for(int i = 0; i < keyCount; ++i)
+            {
+                int valueCount = r.ReadInt32();
+
+                int[] values = new int[valueCount];
+                for(int j = 0; j < valueCount; ++j)
+                {
+                    values[j] = r.ReadInt32();
+                }
+
+                Index[SortedKeys[i]] = values;
+            }
+        }
+
+        public void Write(BinaryWriter w)
+        {
+            ConvertForSearch();
+
+            w.Write(SortedKeys.Count);
+            for (int i = 0; i < SortedKeys.Count; ++i)
+            {
+                w.Write(SortedKeys[i]);
+            }
+
+            for (int i = 0; i < SortedKeys.Count; ++i)
+            {
+                IList<int> values = Index[SortedKeys[i]];
+                w.Write(values.Count);
+
+                for (int j = 0; j < values.Count; ++j)
+                {
+                    w.Write(values[j]);
+                }
             }
         }
     }
