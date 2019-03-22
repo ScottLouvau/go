@@ -2,9 +2,6 @@
 // Licensed under the MIT License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 
 namespace go
 {
@@ -12,9 +9,17 @@ namespace go
     {
         static void Main(string[] args)
         {
-            string rootPath = (args.Length > 0 ? args[0] : @"C:\");
+            string rootPath = (args.Length > 0 ? args[0] : @"C:\Code");
 
             DirectoryIndex index = DirectoryIndex.Build(rootPath);
+
+            foreach (string resultPath in index.Search(new[] { "spam", "bR" }))
+            {
+                Console.WriteLine(resultPath);
+
+                //Environment.CurrentDirectory = resultPath;
+                //break;
+            }
 
             // 161k folders, 48k names, 13s (warm), 30s (cold).
 

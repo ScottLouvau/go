@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Generic;
 
 using go.Extensions;
@@ -50,7 +51,7 @@ namespace go.Search
             if (SortedKeys == null)
             {
                 SortedKeys = new List<string>(Index.Keys);
-                SortedKeys.Sort();
+                SortedKeys.Sort(StringComparer.Ordinal);
             }
 
             Range matches = SortedKeys.RangeStartingWith(prefix);

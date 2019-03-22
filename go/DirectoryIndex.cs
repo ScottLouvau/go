@@ -1,23 +1,20 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using go.Extensions;
+using go.Search;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-using go.Extensions;
-using go.Search;
-
 namespace go
 {
     internal class Directory
     {
         public string Name { get; set; }
-        public int Index { get; set; }
         public int ParentIndex { get; set; }
-        public int DescendantCount { get; set; }
     }
 
     internal class DirectoryIndex
@@ -35,17 +32,39 @@ namespace go
 
         public static DirectoryIndex Build(string rootPath)
         {
+            DirectoryInfo root = new DirectoryInfo(rootPath);
+
             DirectoryIndex result = new DirectoryIndex();
-            result.Build(new DirectoryInfo(rootPath), -1);
+            result.BuildUp(root);
+            result.BuildDown(root, result.Directories.Count - 1);
             return result;
         }
 
-        private void Build(DirectoryInfo under, int parentIndex)
+        private void BuildUp(DirectoryInfo current)
         {
+            DirectoryInfo parent = current.Parent;
+
+            if (parent != null)
+            {
+                BuildUp(parent);
+            }
+
             Directory here = new Directory()
             {
-                Name = under.Name,
-                Index = Directories.Count,
+                Name = current.Name.TrimEnd('\\'),
+                ParentIndex = Directories.Count - 1
+            };
+
+            Directories.Add(here);
+        }
+
+        private void BuildDown(DirectoryInfo current, int parentIndex)
+        {
+            int newIndex = Directories.Count;
+
+            Directory here = new Directory()
+            {
+                Name = current.Name,
                 ParentIndex = parentIndex
             };
 
@@ -53,9 +72,9 @@ namespace go
 
             try
             {
-                foreach (DirectoryInfo child in under.GetDirectories())
+                foreach (DirectoryInfo child in current.GetDirectories())
                 {
-                    Build(child, here.Index);
+                    BuildDown(child, newIndex);
                 }
             }
             catch (UnauthorizedAccessException)
@@ -63,38 +82,103 @@ namespace go
                 // ... Directory we didn't have access to - skip
             }
 
-            here.DescendantCount = (this.Directories.Count - here.Index);
-            NameIndex.Add(here.Name, here.Index);
-            ReversedAcronymIndex.Add(ReversedAcronym(here.Index), here.Index);
+            NameIndex.Add(here.Name, newIndex);
+            ReversedAcronymIndex.Add(ReversedAcronym(newIndex), newIndex);
         }
 
-        public IList<string> Search(IList<string> terms)
+        public IEnumerable<string> Search(IList<string> terms, string preferUnderPath = null)
         {
-            // Issue: Want prefix search in indices.
-            //  Sorted array or tree, then single array of matches and first match.
-
-            // Issue: How do I filter matches while handling hierarchy?
-            //  - Ex: "bion bR" -> each term should logically match all paths under ones which contain the term.
-            //  - So bion match should add whole Range for bion, and bR should "narrow"
-            //   - For each term, get all Directories for term and sort.
-            //   - Narrow each existing match to ranges within which match the new term.
-
-            HashSet<int> matches = new HashSet<int>();
+            HashSet<int> currentMatches = null;
             HashSet<int> termMatches = new HashSet<int>();
+            HashSet<int> working = new HashSet<int>();
 
             foreach (string term in terms)
             {
                 termMatches.Clear();
-
                 NameIndex.AddMatchesStartingWith(term, termMatches);
                 ReversedAcronymIndex.AddMatchesStartingWith(term.Reverse(), termMatches);
 
-                // TODO: Merge matches correctly.
+                if (currentMatches == null)
+                {
+                    // First term: Keep all matches
+                    currentMatches = new HashSet<int>(termMatches);
+                }
+                else
+                {
+                    // Otherwise intersect
+                    IntersectHierarchy(currentMatches, termMatches, working);
+
+                    // If there are no more valid matches, stop
+                    if (currentMatches.Count == 0)
+                    {
+                        break;
+                    }
+                }
             }
 
-            // TODO: Ranking
+            // Ranking: Restrict to under current path, if any matches
+            if (preferUnderPath != null)
+            {
+                HashSet<int> beforeFiltering = new HashSet<int>(currentMatches);
 
-            return matches.Select(index => FullPath(index)).ToList();
+                int pathIndex = IndexOfPath(preferUnderPath);
+                if (pathIndex != -1)
+                {
+                    termMatches.Clear();
+                    termMatches.Add(pathIndex);
+                    IntersectHierarchy(currentMatches, termMatches, working);
+                    if (currentMatches.Count == 0) { currentMatches = beforeFiltering; }
+                }
+            }
+
+            // Ranking: Return shallowest directory
+            return currentMatches.OrderBy(index => Depth(index)).Select(index => FullPath(index));
+        }
+
+        private void IntersectHierarchy(HashSet<int> matches, HashSet<int> termMatches, HashSet<int> working)
+        {
+            // Hierarchy matches are kept if they or an ancestor is in the other set.
+            //  Suppose we're intersecting "C:\Code" and "C:\Code\go".
+            //  "C:\Code" is not kept because no ancestor is in the set.
+            //  "C:\Code\go" is kept because the ancestor "C:\Code" is in the set.
+
+            // Collect the matches from each side
+            working.Clear();
+            working.UnionWith(matches.Where(index => ItemOrAncestorInSet(index, termMatches)));
+            working.UnionWith(termMatches.Where(index => ItemOrAncestorInSet(index, matches)));
+
+            // Reset matches so far to this set
+            matches.Clear();
+            matches.UnionWith(working);
+        }
+
+        private bool ItemOrAncestorInSet(int index, HashSet<int> set)
+        {
+            int current = index;
+            while (current != -1)
+            {
+                if (set.Contains(current)) { return true; }
+                current = Directories[current].ParentIndex;
+            }
+
+            return false;
+        }
+
+        private int IndexOfPath(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+            string revAcronym = ReversedAcronym(fullPath);
+
+            HashSet<int> candidates = new HashSet<int>();
+            ReversedAcronymIndex.AddMatchesStartingWith(revAcronym, candidates);
+
+            foreach (int index in candidates)
+            {
+                string candidateFullPath = FullPath(index);
+                if (fullPath.Equals(candidateFullPath)) { return index; }
+            }
+
+            return -1;
         }
 
         private string ReversedAcronym(int index)
@@ -111,6 +195,33 @@ namespace go
             return result.ToString();
         }
 
+        private string ReversedAcronym(string fullPath)
+        {
+            string[] parts = fullPath.Split('\\');
+
+            StringBuilder result = new StringBuilder(parts.Length);
+            for (int i = parts.Length - 1; i >= 0; --i)
+            {
+                result.Append(parts[i][0]);
+            }
+
+            return result.ToString();
+        }
+
+        private int Depth(int index)
+        {
+            int depth = -1;
+
+            int current = index;
+            while (current != -1)
+            {
+                current = Directories[current].ParentIndex;
+                depth++;
+            }
+
+            return depth;
+        }
+
         private string FullPath(int index)
         {
             StringBuilder builder = new StringBuilder();
@@ -125,7 +236,7 @@ namespace go
             if (parentIndex != -1)
             {
                 FullPathRecursive(parentIndex, builder);
-                builder.Append("/");
+                builder.Append("\\");
             }
 
             builder.Append(here.Name);
