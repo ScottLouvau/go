@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.136
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "go", "go\go.csproj", "{8403A692-8F6F-4950-A630-936DA68FD513}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "go.Test", "go.Test\go.Test.csproj", "{D1CED676-17E0-42FB-810A-4DD123600AB6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8403A692-8F6F-4950-A630-936DA68FD513}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8403A692-8F6F-4950-A630-936DA68FD513}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8403A692-8F6F-4950-A630-936DA68FD513}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8403A692-8F6F-4950-A630-936DA68FD513}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1CED676-17E0-42FB-810A-4DD123600AB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1CED676-17E0-42FB-810A-4DD123600AB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1CED676-17E0-42FB-810A-4DD123600AB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1CED676-17E0-42FB-810A-4DD123600AB6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0EED60FF-1D14-4A5F-A812-7102C5BCFFDA}
+	EndGlobalSection
+EndGlobal
