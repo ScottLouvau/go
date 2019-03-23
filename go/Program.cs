@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -25,9 +24,11 @@ namespace go
   Terms may be the prefix of any folder name in the path, or
   the the suffix of the acronym of path (ex: bin\Release -> bR)";
 
+        private static readonly string[] Colors = new[] { "1F", "3F", "5F", "8F", "9F" };
+
         static void Main(string[] args)
         {
-            if(args.Length == 0)
+            if (args.Length == 0)
             {
                 Console.WriteLine(Usage);
                 return;
@@ -52,24 +53,35 @@ namespace go
                 index = new DirectoryIndex();
                 BinarySerializer.LoadFromFile(index, serializationPath);
 
-                bool firstPath = true;
+                bool hadMatches = false;
                 foreach (string resultPath in index.Search(args).Take(5))
                 {
-                    if(firstPath)
-                    {
-                        Console.WriteLine(resultPath);
-                        Console.Title = $"{DirectoryIndex.Acronym(resultPath)}: {resultPath}";
-                        firstPath = false;
-                    }
-
-                    Console.WriteLine($"{DirectoryIndex.Acronym(resultPath)}: {resultPath}");
+                    hadMatches = true;
+                    Console.WriteLine($" {ColorHash(resultPath)} | {Pad(DirectoryIndex.Acronym(resultPath), 15)} | {resultPath}");
                 }
 
-                if (firstPath == true)
+                if (!hadMatches)
                 {
                     Console.WriteLine($"No folders found matching {String.Join(' ', args)}.");
                 }
             }
+        }
+
+        static string Pad(string value, int length)
+        {
+            if (value.Length >= length) { return value; }
+            return value + new string(' ', length - value.Length);
+        }
+
+        static string ColorHash(string path)
+        {
+            uint hash = 0;
+            for (int i = 0; i < path.Length; ++i)
+            {
+                hash = hash * 31 + path[i];
+            }
+
+            return Colors[hash % Colors.Length];
         }
     }
 }

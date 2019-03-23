@@ -40,13 +40,13 @@ namespace go
 
             DirectoryIndex result = new DirectoryIndex();
             result.BuildUp(root.Parent);
-            result.BuildDown(root, result.Directories.Count - 1);
+            result.BuildDown(root, result.Directories.Count - 1, new PartialArray<Word>());
             return result;
         }
 
         private void BuildUp(DirectoryInfo current)
         {
-            if(current == null) { return; }
+            if (current == null) { return; }
             BuildUp(current.Parent);
 
             Directory here = new Directory()
@@ -58,7 +58,7 @@ namespace go
             Directories.Add(here);
         }
 
-        private void BuildDown(DirectoryInfo current, int parentIndex)
+        private void BuildDown(DirectoryInfo current, int parentIndex, PartialArray<Word> reuse)
         {
             int newIndex = Directories.Count;
 
@@ -74,7 +74,7 @@ namespace go
             {
                 foreach (DirectoryInfo child in current.GetDirectories())
                 {
-                    BuildDown(child, newIndex);
+                    BuildDown(child, newIndex, reuse);
                 }
             }
             catch (UnauthorizedAccessException)
@@ -86,7 +86,20 @@ namespace go
                 // ... Redirect - skip
             }
 
+            // Index whole directory name
             NameIndex.Add(here.Name, newIndex);
+
+            // Index directory name parts
+            reuse = WordSplitter.Split(here.Name, reuse);
+            foreach (Word word in reuse)
+            {
+                if (word.Type != CharacterType.Other && word.Length != here.Name.Length && word.Length > 1)
+                {
+                    NameIndex.Add(word.ToString(here.Name), newIndex);
+                }
+            }
+
+            // Index reversed acronym (so prefix search is acronym suffix)
             ReversedAcronymIndex.Add(ReversedAcronym(newIndex), newIndex);
         }
 
@@ -189,7 +202,7 @@ namespace go
         {
             StringBuilder result = new StringBuilder();
             PartialArray<Word> words = null;
-            
+
             while (index != -1)
             {
                 Directory current = Directories[index];
@@ -278,7 +291,7 @@ namespace go
         public void Write(BinaryWriter w)
         {
             w.Write(Directories.Count);
-            for(int i = 0; i < Directories.Count; ++i)
+            for (int i = 0; i < Directories.Count; ++i)
             {
                 w.Write(Directories[i].Name);
                 w.Write(Directories[i].ParentIndex);
