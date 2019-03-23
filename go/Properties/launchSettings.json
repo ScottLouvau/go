@@ -5,7 +5,7 @@
     },
     "index": {
       "commandName": "Project",
-      "commandLineArgs": "--index C:\\Code"
+      "commandLineArgs": "--index C:\\"
     },
     "bion bR": {
       "commandName": "Project",

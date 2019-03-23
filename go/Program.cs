@@ -1,19 +1,21 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using go.Diagnostics;
-using go.IO;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+
+using go.Diagnostics;
+using go.IO;
 
 namespace go
 {
     /// <summary>
     ///  TODO:
     ///   - Tests for DirectoryIndex, serialization
-    ///   - New acronym model with fewer dupes?
+    ///   - Factor out Term matches, Intersect, Rank.
+    ///   - Acronym character at each character type boundary.
     /// </summary>
     class Program
     {
@@ -50,33 +52,24 @@ namespace go
                 index = new DirectoryIndex();
                 BinarySerializer.LoadFromFile(index, serializationPath);
 
-                string firstPath = null;
+                bool firstPath = true;
                 foreach (string resultPath in index.Search(args).Take(5))
                 {
+                    if(firstPath)
+                    {
+                        Console.WriteLine(resultPath);
+                        Console.Title = $"{DirectoryIndex.Acronym(resultPath)}: {resultPath}";
+                        firstPath = false;
+                    }
+
                     Console.WriteLine($"{DirectoryIndex.Acronym(resultPath)}: {resultPath}");
-                    if (firstPath == null) { firstPath = resultPath; }
                 }
 
-                // Navigate to the first match
-                if (firstPath != null)
-                {
-                    Console.Title = $"{DirectoryIndex.Acronym(firstPath)}: {firstPath}";
-                    ChangeDirectory(firstPath);
-                }
-                else
+                if (firstPath == true)
                 {
                     Console.WriteLine($"No folders found matching {String.Join(' ', args)}.");
                 }
             }
-        }
-
-        private static void ChangeDirectory(string targetPath)
-        {
-            Process p = new Process();
-            p.StartInfo.FileName = "cmd.exe";
-            p.StartInfo.Arguments = $"/K CD /D \"{targetPath}\" && TITLE {DirectoryIndex.Acronym(targetPath)}: {targetPath}";
-            p.StartInfo.UseShellExecute = false;
-            p.Start();
         }
     }
 }

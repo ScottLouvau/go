@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using go.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+
+using go.Extensions;
 
 namespace go.Search
 {

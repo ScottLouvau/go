@@ -1,13 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using go.Extensions;
-using go.Search;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+
+using go.Components;
+using go.Extensions;
+using go.Search;
 
 namespace go
 {
@@ -62,7 +64,7 @@ namespace go
 
             Directory here = new Directory()
             {
-                Name = current.Name,
+                Name = current.Name.TrimEnd('\\'),
                 ParentIndex = parentIndex
             };
 
@@ -186,28 +188,38 @@ namespace go
         private string ReversedAcronym(int index)
         {
             StringBuilder result = new StringBuilder();
-
+            PartialArray<Word> words = null;
+            
             while (index != -1)
             {
                 Directory current = Directories[index];
-                result.Append(current.Name[0]);
+                words = AppendReversedAcronym(current.Name, result, words);
                 index = current.ParentIndex;
             }
 
             return result.ToString();
         }
 
-        public static string ReversedAcronym(string fullPath)
+        public static string ReversedAcronym(string fullPath, PartialArray<Word> reuse = null)
         {
-            string[] parts = fullPath.Split('\\');
+            StringBuilder result = new StringBuilder();
+            AppendReversedAcronym(fullPath, result, reuse);
+            return result.ToString();
+        }
 
-            StringBuilder result = new StringBuilder(parts.Length);
-            for (int i = parts.Length - 1; i >= 0; --i)
+        private static PartialArray<Word> AppendReversedAcronym(string name, StringBuilder result, PartialArray<Word> reuse = null)
+        {
+            var words = WordSplitter.Split(name, reuse);
+
+            for (int i = words.Count - 1; i >= 0; --i)
             {
-                result.Append(parts[i][0]);
+                if (words[i].Type != CharacterType.Other)
+                {
+                    result.Append(name[words[i].Index]);
+                }
             }
 
-            return result.ToString();
+            return words;
         }
 
         public static string Acronym(string path)
