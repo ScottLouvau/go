@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "go": {
+      "commandName": "Project"
+    },
+    "index": {
+      "commandName": "Project",
+      "commandLineArgs": "--index C:\\"
+    },
+    "bion bR": {
+      "commandName": "Project",
+      "commandLineArgs": "bion bR"
+    }
+  }
+}
