@@ -34,7 +34,7 @@ namespace go
                 return;
             }
 
-            string serializationPath = Path.Combine(Path.GetTempPath(), "go", "DirectoryIndex.bin");
+            string serializationPath = Environment.ExpandEnvironmentVariables(Path.Combine("%LocalAppData%", "go", "DirectoryIndex.bin"));
             DirectoryIndex index = null;
 
             if (args[0] == "--index")
@@ -63,7 +63,7 @@ namespace go
                 if (!hadMatches)
                 {
                     Console.WriteLine($"No folders found matching {String.Join(' ', args)}.");
-                }
+                }                
             }
         }
 

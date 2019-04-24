@@ -35,7 +35,12 @@ namespace go.Components
             _array[Count++] = value;
         }
 
-        public IEnumerator<T> GetEnumerator()
+        public PartialArrayEnumerator<T> GetEnumerator()
+        {
+            return new PartialArrayEnumerator<T>(this);
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return new PartialArrayEnumerator<T>(this);
         }
