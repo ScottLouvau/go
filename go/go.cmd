@@ -8,14 +8,16 @@ IF "%1"=="--index" (
   GOTO :EOF
 )
 
+IF NOT EXIST "%LocalAppData%\go" ("%LocalAppData%\go")
+
 :: Run Engine to get paths
-"%~dp0\goEngine.exe" %* > %TEMP%\go\LastRun.log
+"%~dp0\goEngine.exe" %* > %LocalAppData%\go\LastRun.log
 
 :: Echo output
-TYPE %TEMP%\go\LastRun.log
+TYPE %LocalAppData%\go\LastRun.log
 
 :: Read first line from output 
-SET /P FirstLine=< %TEMP%\go\LastRun.log
+SET /P FirstLine=< %LocalAppData%\go\LastRun.log
 
 :: Split acronym and path
 FOR /F "tokens=1-3 delims=|" %%A in ("%FirstLine%") do (
