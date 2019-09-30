@@ -4,14 +4,14 @@
 
 :: Don't redirect output for indexing
 IF "%1"=="--index" (
-  "%~dp0\goEngine.exe" %*
+  "%~dp0goEngine.exe" %*
   GOTO :EOF
 )
 
 IF NOT EXIST "%LocalAppData%\go" ("%LocalAppData%\go")
 
 :: Run Engine to get paths
-"%~dp0\goEngine.exe" %* > %LocalAppData%\go\LastRun.log
+"%~dp0goEngine.exe" %* > %LocalAppData%\go\LastRun.log
 
 :: Echo output
 TYPE %LocalAppData%\go\LastRun.log
