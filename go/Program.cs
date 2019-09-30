@@ -54,7 +54,7 @@ namespace go
                 BinarySerializer.LoadFromFile(index, serializationPath);
 
                 bool hadMatches = false;
-                foreach (string resultPath in index.Search(args).Take(5))
+                foreach (string resultPath in index.Search(args, Environment.CurrentDirectory).Take(5))
                 {
                     hadMatches = true;
                     Console.WriteLine($" {ColorHash(resultPath)} | {Pad(DirectoryIndex.Acronym(resultPath), 15)} | {resultPath}");
