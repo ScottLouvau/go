@@ -8,6 +8,9 @@ IF "%1"=="--index" (
   GOTO :EOF
 )
 
+:: Ensure LocalAppData\go exists
+IF NOT EXIST "%LocalAppData%\go" (MD "%LocalAppData%\go")
+
 :: Run Engine to get paths
 "%~dp0\goEngine.exe" %* > %TEMP%\go\LastRun.log
 

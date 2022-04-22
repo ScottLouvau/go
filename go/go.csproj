@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>goEngine</AssemblyName>
+    <StartupObject>go.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
